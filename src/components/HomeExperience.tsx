@@ -23,25 +23,33 @@ export default function HomeExperience() {
   const raf = useRef(0);
   const seeking = useRef(false);
   const [chapter, setChapter] = useState(0);
+  const [introDone, setIntroDone] = useState(false);
 
+  // Intro: transparent logo spins 360°, then the black curtains part.
+  // IMPORTANT: the preloader is unmounted by React (via `introDone`) and never removed
+  // from the DOM by GSAP. Calling element.remove() on a React-managed node made React
+  // throw "removeChild" when the homepage unmounted on navigation, which triggered
+  // error.tsx ("We'll be right back") on every subpage.
   useEffect(() => {
-    const emblem = preloader.current?.querySelector('.preload-emblem');
-    const intro = gsap.timeline({ delay: 0.15 });
-    if (emblem) {
-      intro.to(emblem, {
-        rotationY: 360,
-        duration: 2.4,
-        ease: 'power2.inOut',
-        transformPerspective: 900,
-      });
+    const root = preloader.current;
+    if (!root) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setIntroDone(true);
+      return;
     }
-    intro.to(preloader.current, {
-      yPercent: -100,
-      duration: 0.8,
-      ease: 'power3.inOut',
-      onComplete: () => preloader.current?.remove(),
-    });
-    return () => intro.kill();
+    const ctx = gsap.context(() => {
+      gsap.set('.preload-emblem', { transformPerspective: 900, transformOrigin: '50% 50%', opacity: 0, scale: 0.92 });
+      gsap.set('.preload-glow', { opacity: 0, scale: 0.7 });
+      const tl = gsap.timeline({ delay: 0.1, onComplete: () => setIntroDone(true) });
+      tl.to('.preload-emblem', { opacity: 1, scale: 1, duration: 0.6, ease: 'power2.out' }, 0)
+        .to('.preload-glow', { opacity: 1, scale: 1, duration: 0.9, ease: 'power2.out' }, 0)
+        .to('.preload-emblem', { rotationY: 360, duration: 2.2, ease: 'power2.inOut' }, 0)
+        .to('.preload-glow', { opacity: 0.55, scale: 1.12, duration: 0.55, yoyo: true, repeat: 1, ease: 'sine.inOut' }, 1.1)
+        .to(['.preload-emblem', '.preload-glow'], { opacity: 0, scale: 1.08, duration: 0.4, ease: 'power2.in' }, '+=0.15')
+        .to('.preload-curtain-left', { xPercent: -101, duration: 0.9, ease: 'power3.inOut' })
+        .to('.preload-curtain-right', { xPercent: 101, duration: 0.9, ease: 'power3.inOut' }, '<');
+    }, root);
+    return () => ctx.revert();
   }, []);
 
   useEffect(() => {
@@ -126,28 +134,20 @@ export default function HomeExperience() {
 
   return (
     <>
-      <div className="preloader" ref={preloader} aria-label="Loading">
-        <img
-          className="preload-emblem"
-          src="/logo.png.png"
-          alt=""
-          aria-hidden="true"
-          style={{
-            width: 92,
-            height: 92,
-            objectFit: 'contain',
-            mixBlendMode: 'screen',
-            filter: 'invert(1) contrast(1.35) sepia(0.35) saturate(1.4)',
-            animation: 'none',
-            transformStyle: 'preserve-3d',
-            dropShadow: '0 0 18px rgba(181,154,104,.45)',
-          }}
-        />
-      </div>
+      {!introDone && (
+        <div className="preloader" ref={preloader} role="status" aria-label="Loading Ricq">
+          <div className="preload-curtain preload-curtain-left" />
+          <div className="preload-curtain preload-curtain-right" />
+          <div className="preload-stage">
+            <span className="preload-glow" aria-hidden="true" />
+            <img className="preload-emblem" src="/logo.png.png" alt="" aria-hidden="true" width={1254} height={1254} />
+          </div>
+        </div>
+      )}
       <section ref={section} className="assembly-section">
-        <div className="assembly-sticky min-h-[75svh] md:h-screen">
+        <div className="assembly-sticky h-[calc(100svh-68px)] min-h-[75svh] md:h-[calc(100svh-82px)]">
           <video ref={video} className="assembly-source" src="/hero-sequence.mp4.mp4" muted playsInline preload="metadata" aria-hidden="true" />
-          <canvas ref={canvas} className="assembly-video object-cover object-[center_15%]" aria-label="Ricq garment assembly film" />
+          <canvas ref={canvas} className="assembly-video block h-full w-full object-cover object-[center_15%]" aria-label="Ricq garment assembly film" />
           <div className="assembly-shade" />
           <div className="assembly-copy">
             <span className="eyebrow">01 — THE MAKING</span>
@@ -173,7 +173,7 @@ function RunwayShowcase() {
   return (
     <section className="runway-section" id="runway">
       <div className="runway-heading"><span className="eyebrow">02 — IN MOTION</span><h2>Made to <i>move.</i></h2><p>Quiet confidence, from every angle.</p></div>
-      <div className="runway-grid min-h-[75svh] md:h-screen">
+      <div className="runway-grid h-[75svh] min-h-[75svh] md:h-screen">
         <LazyRunwayVideo src="/runway1.mp4.mp4" />
         <LazyRunwayVideo src="/runway2.mp4.mp4" />
         <span className="runway-caption">THE RICQ EDIT — 2025</span>
@@ -214,5 +214,5 @@ function LazyRunwayVideo({ src }: { src: string }) {
     };
   }, [src]);
 
-  return <video ref={ref} data-src={src} className="object-cover object-[center_15%]" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 15%' }} autoPlay muted loop playsInline preload="none" />;
+  return <video ref={ref} data-src={src} className="h-full w-full object-cover object-[center_15%]" autoPlay muted loop playsInline preload="none" />;
 }
