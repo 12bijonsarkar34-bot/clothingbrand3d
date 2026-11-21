@@ -13,7 +13,15 @@ type CartContextValue = {
   setQuantity: (productId: string, size: string, quantity: number) => void;
   clear: () => void;
 };
-const CartContext = createContext<CartContextValue | null>(null);
+const CartContext = createContext<CartContextValue>({
+  items: [],
+  ready: false,
+  count: 0,
+  addItem: () => {},
+  removeItem: () => {},
+  setQuantity: () => {},
+  clear: () => {},
+});
 
 function isCartItem(value: unknown): value is CartItem {
   if (!value || typeof value !== 'object') return false;
@@ -80,7 +88,5 @@ export function CartProvider({ children }: { children: ReactNode }) {
 }
 
 export function useCart() {
-  const value = useContext(CartContext);
-  if (!value) throw new Error('useCart must be used within CartProvider');
-  return value;
+  return useContext(CartContext);
 }
