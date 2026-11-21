@@ -1,0 +1,7 @@
+'use client';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useState } from 'react';
+import { useCart } from '@/context/CartContext';
+export function Navbar() { const { count } = useCart(); const [open, setOpen] = useState(false); const links = [['Home','/'],['Shop','/shop'],['3D Runway','/#runway'],['About','/about'],['Contact','/contact']]; return <header className="site-nav"><Link href="/" className="brand-lockup" aria-label="Ricq home"><Image src="/logo.png.png" alt="Ricq icon" width={38} height={38} priority/><Image src="/brandnamestyle.png" alt="Ricq" width={88} height={30} className="wordmark" priority/></Link><button className="menu-toggle" onClick={() => setOpen(!open)} aria-label="Toggle navigation">☰</button><nav className={open ? 'nav-links open' : 'nav-links'}>{links.map(([label,href])=><Link key={label} href={href} onClick={()=>setOpen(false)}>{label}</Link>)}</nav><Link className="cart-link" href="/cart" aria-label={`Cart, ${count} items`}><span>Bag</span><span className="cart-count">{count}</span></Link></header> }
+export function Footer() { return <footer className="site-footer"><div><Link href="/" className="footer-mark">RICQ</Link><p>Considered essentials. Made to be lived in.</p></div><div className="footer-links"><Link href="/shop">Shop</Link><Link href="/about">Our story</Link><Link href="/contact">Contact</Link><a href="mailto:hello@ricq.in">hello@ricq.in</a></div><small>© {new Date().getFullYear()} Ricq. Made with intention.</small></footer> }
